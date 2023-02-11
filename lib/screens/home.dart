@@ -19,7 +19,7 @@ class HomeScreen extends StatelessWidget {
               style: Theme.of(context).textTheme.headlineLarge,
             ),
             Text(
-              'Moojik (cringe name) is supposed to be a "hybrid music app" thattttttttttttt combines the goodness of streaming and downloading music',
+              'Horrible name for a music player',
             ),
 						ElevatedButton (
 							child: const Text("Currently Playing"),

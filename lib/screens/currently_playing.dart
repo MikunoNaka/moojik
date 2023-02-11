@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:audioplayers/audioplayers.dart';
-
+import './../util/format_time.dart';
 
 class CurrentlyPlayingScreen extends StatefulWidget {
   const CurrentlyPlayingScreen({super.key});
@@ -11,22 +11,26 @@ class CurrentlyPlayingScreen extends StatefulWidget {
 
 class _CurrentlyPlayingScreenState extends State<CurrentlyPlayingScreen> {
 	final player = AudioPlayer();
-	bool isPlaying = false;
-	bool repeatMode = false;
+
+	PlayerState state = PlayerState.paused;
 	Duration duration = Duration.zero;
 	Duration position = Duration.zero;
+
+	// TODO: remember last values
+	bool _repeatMode = false;
+	bool _showTimeRemaining = true;
 
 	@override
 	void initState() {
 		super.initState();
 
-    player.setReleaseMode(repeatMode ? ReleaseMode.loop : ReleaseMode.release);
+    player.setReleaseMode(_repeatMode ? ReleaseMode.loop : ReleaseMode.release);
 		setAudio();
 
 		// listen to state change (playing|paused|stopped)
-		player.onPlayerStateChanged.listen((state) {
+		player.onPlayerStateChanged.listen((newState) {
 			setState(() {
-				isPlaying = state == PlayerState.playing;
+				state = newState;
 			});
 		});
 
@@ -38,11 +42,11 @@ class _CurrentlyPlayingScreenState extends State<CurrentlyPlayingScreen> {
 		});
 
 		// listen to audio position change
-		//player.onAudioPositionChanged.listen((newPosition) {
-		//	setState(() {
-		//		position = newPosition;
-		//	});
-		//});
+		player.onPositionChanged.listen((newPosition) {
+			setState(() {
+				position = newPosition;
+			});
+		});
 	}
 
 	@override
@@ -68,22 +72,75 @@ class _CurrentlyPlayingScreenState extends State<CurrentlyPlayingScreen> {
 				margin: const EdgeInsets.only(left: 10.0, right: 10.0),
 				child: Column(
 				  mainAxisSize: MainAxisSize.max,
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: <Widget>[
-            Text(
-              'Demo Song',
-              style: Theme.of(context).textTheme.headlineLarge,
-            ),
-						ElevatedButton (
-							child: Text(isPlaying ? "Pause" : "Play"),
-							onPressed: () async {
-								if (isPlaying) {
-									await player.pause();
-								} else {
-									await player.resume();
-								}
-							},
+						ClipRRect(
+							borderRadius: BorderRadius.circular(20),
+							child: Image.network(
+								"https://vidhukant.xyz/images/vidhukant.webp",
+								width: double.infinity,
+								height: 350,
+								fit: BoxFit.cover,
+							)
 						),
+						const SizedBox(height: 32),//padding
+						Text(
+							"Song Title",
+							style: TextStyle(
+								fontSize: 24,
+								fontWeight: FontWeight.bold,
+								color: Theme.of(context).accentColor,
+							),
+						),
+						Text(
+							"Artist Name . Album",
+							style: TextStyle(
+								fontSize: 18,
+								color: Theme.of(context).disabledColor,
+							),
+						),
+						Slider(
+							min: 0,
+							max: duration.inSeconds.toDouble(),
+							value: position.inSeconds.toDouble(),
+							onChanged: (value) async {},
+						),
+						Row(
+							mainAxisAlignment: MainAxisAlignment.spaceBetween,
+							children: <Widget>[
+								Text(formatTime(position)),
+								GestureDetector(
+									child: Text(_showTimeRemaining ? formatTime(duration - position) : formatTime(duration)),
+									onTap: () {
+							      setState(() {
+							      	_showTimeRemaining = !_showTimeRemaining;
+							      });
+									},
+								),
+							],
+						),
+						CircleAvatar(
+							radius: 35,
+						  child: IconButton(
+						  	icon: Icon(
+									state == PlayerState.paused ? Icons.play_arrow : (state == PlayerState.playing ? Icons.pause : Icons.replay),
+						  	),
+								iconSize: 50,
+						  	onPressed: () async {
+									switch (state) {
+										case PlayerState.playing:
+										  await player.pause();
+										  break;
+										case PlayerState.paused:
+										  await player.resume();
+											break;
+										default:
+										// TODO: replay
+											break;
+									}
+						  	},
+						  ),
+						)
           ],
         ),
 			),
